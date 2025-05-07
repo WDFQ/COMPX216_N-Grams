@@ -37,7 +37,7 @@ def build_bigram(sequence):
     # Replace the line below with your code.
 
     #current and previous word
-    prev_word = ""
+    prev_word = None
     
     #create outer dictionary 
     outer_dictionary = {}
@@ -46,7 +46,7 @@ def build_bigram(sequence):
     #loop through the text document
     for word in sequence:
 
-        if(prev_word == ""):
+        if(prev_word is None):
             #prev word 
             prev_word = (word, )
             continue
@@ -83,26 +83,70 @@ def build_n_gram(sequence, n):
     # Task 1.3
     # Return an n-gram model.
     # Replace the line below with your code.
-    #current and previous word
-     #current and previous word
-    prev_word = ""
+
+    #gets the first n no of context words 
+    prev_words = tuple(sequence[:n - 1])
     
     #create outer dictionary 
     outer_dictionary = {}
-
-    #set tuple size
-    context_tuple = ()
     
 
-    while(context_tuple != n - 1):
-        context_tuple 
+    #loop through the text document
+    for word in sequence:
+
+        if(word in prev_words):
+            continue
+
+        #if prev words is in outer dictionary 
+        if(prev_words in outer_dictionary):
+            inner_dictionary = outer_dictionary[prev_words]
+
+            #if word is already in inner dictionary
+            if word in inner_dictionary:
+                #increment the value for that key (word)
+                inner_dictionary[word] += 1
+            else:
+                #create a new entry in the inner dictionary and make value = 1
+                inner_dictionary[word] = 1
+
+            #set value of outer dict to inner dict with current words
+            outer_dictionary[prev_words] = inner_dictionary
+        else:
+            #create
+            inner_dictionary = {}
+            #create a new entry in the inner dictionary and make value = 1
+            inner_dictionary[word] = 1
+             #set value of outer dict to inner dict with current word
+            outer_dictionary[prev_words] = inner_dictionary
+
+
+        #update tuple 
+        prev_words_list = []
+        counter = 0
+        for old_word in prev_words:
+            if counter == 0:
+                counter += 1
+                continue
+            else:
+                prev_words_list.append(old_word)
+            counter += 1
+
+        prev_words_list.append(word)
+
+        prev_words = (tuple)(prev_words_list)
+
+            
+    return outer_dictionary
     
 
 def query_n_gram(model, sequence):
     # Task 2
     # Return a prediction as a dictionary.
     # Replace the line below with your code.
-    raise NotImplementedError
+    if sequence in model:
+        return model[sequence]
+    else:
+        return None
 
 def blended_probabilities(preds, factor=0.8):
     blended_probs = {}
@@ -158,16 +202,16 @@ if __name__ == '__main__':
     '''
 
     # Task 1.2 test code
-    
+    '''
     model = build_bigram(sequence[:20])
     print(model)
-    
+    '''
 
     # Task 1.3 test code
-    '''
+    
     model = build_n_gram(sequence[:20], 5)
     print(model)
-    '''
+    
 
     # Task 2 test code
     '''
