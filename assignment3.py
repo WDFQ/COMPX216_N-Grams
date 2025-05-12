@@ -94,7 +94,8 @@ def build_n_gram(sequence, n):
     #loop through the text document
     for word in sequence:
 
-        if(word in prev_words):
+        #check if the initial length has enough context to be put in to the outer dict
+        if word in prev_words:
             continue
 
         #if prev words is in outer dictionary 
@@ -114,10 +115,11 @@ def build_n_gram(sequence, n):
         else:
             #create
             inner_dictionary = {}
+            #set value of outer dict to inner dict with current word
+            outer_dictionary[prev_words] = inner_dictionary
             #create a new entry in the inner dictionary and make value = 1
             inner_dictionary[word] = 1
-             #set value of outer dict to inner dict with current word
-            outer_dictionary[prev_words] = inner_dictionary
+            
 
 
         #update tuple 
@@ -177,13 +179,58 @@ def sample(sequence, models):
     # Task 3
     # Return a token sampled from blended predictions.
     # Replace the line below with your code.
-    raise NotImplementedError
+
+    inner_dicts = []
+
+    models_used_list = []
+
+
+    #put all models in to models used list if current sequence length is more than 9
+    if len(sequence) > 9:
+        models_used_list = models
+    #use the models from the first one to the length of sequence + 1 
+    else:
+        models_used_list = models[-(len(sequence) + 1):]
+    
+
+    #counter for how many context words we need at the moment
+    counter = len(models_used_list) - 1
+    
+    for model in models_used_list:
+        
+        #if we have context words, grab counter amount from the end of the sequence
+        if(counter > 0):
+            context_words = tuple(sequence[-(counter):])
+        else:
+            context_words = ()
+
+        
+        #grabs the inner dictionary 
+        #print(context_words)
+        inner = query_n_gram(model, context_words)
+        
+        #if current inner dict has those context words, add to all the inner dicts list
+        if inner is not None:
+            inner_dicts.append(inner)
+            
+        # -1 from counter to use all the other n grams
+        counter -= 1
+
+    #gets the blended probabilties and puts into a dictionary
+    blended_prob_dict = blended_probabilities(inner_dicts)
+
+    #returns the a random word
+    #key = words avalible to choose from, values = weight of each word, 1 = choosing one word
+    return random.choices(list(blended_prob_dict.keys()), weights=(list)(blended_prob_dict.values()), k = 1)[0]
+
+                
 
 def log_likelihood_ramp_up(sequence, models):
     # Task 4.1
     # Return a log likelihood value of the sequence based on the models.
     # Replace the line below with your code.
     raise NotImplementedError
+    #
 
 def log_likelihood_blended(sequence, models):
     # Task 4.2
@@ -208,18 +255,16 @@ if __name__ == '__main__':
     '''
 
     # Task 1.3 test code
-    
     model = build_n_gram(sequence[:20], 5)
     print(model)
-    
 
     # Task 2 test code
-    '''
+    print()
     print(query_n_gram(model, tuple(sequence[:4])))
-    '''
+
 
     # Task 3 test code
-    '''
+    
     models = [build_n_gram(sequence, i) for i in range(10, 0, -1)]
     head = []
     for _ in range(100):
@@ -227,7 +272,7 @@ if __name__ == '__main__':
         print(tail, end=' ')
         head.append(tail)
     print()
-    '''
+    
 
     # Task 4.1 test code
     '''
