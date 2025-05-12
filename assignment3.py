@@ -180,64 +180,125 @@ def sample(sequence, models):
     # Return a token sampled from blended predictions.
     # Replace the line below with your code.
 
-    inner_dicts = []
-
-    models_used_list = []
-
-
-    #put all models in to models used list if current sequence length is more than 9
-    if len(sequence) > 9:
-        models_used_list = models
-    #use the models from the first one to the length of sequence + 1 
-    else:
-        models_used_list = models[-(len(sequence) + 1):]
+    inner_dicts = []  
     
-
-    #counter for how many context words we need at the moment
-    counter = len(models_used_list) - 1
-    
-    for model in models_used_list:
-        
-        #if we have context words, grab counter amount from the end of the sequence
-        if(counter > 0):
-            context_words = tuple(sequence[-(counter):])
-        else:
-            context_words = ()
-
-        
-        #grabs the inner dictionary 
-        #print(context_words)
-        inner = query_n_gram(model, context_words)
-        
-        #if current inner dict has those context words, add to all the inner dicts list
-        if inner is not None:
-            inner_dicts.append(inner)
+    for model in models:  
+        #find this model's context length
+        context_length = 0
+        for key in model.keys():
+                #get context legnth from first key since they all have the same legnth
+                context_length = len(key) 
+                break  
             
-        # -1 from counter to use all the other n grams
-        counter -= 1
+        #calculating how much context is avalible
+        available_context = min(context_length, len(sequence))
+        
+        #get the context words (empty tuple if no context available)
+        
+        if available_context > 0:
+            context = tuple(sequence[-available_context:]) 
+        else:
+           context = ()
+        
+        #get the model's prediction (current inner dictionary) for this context
+        prediction = query_n_gram(model, context)
+        if prediction is not None:
+            inner_dicts.append(prediction)
 
-    #gets the blended probabilties and puts into a dictionary
-    blended_prob_dict = blended_probabilities(inner_dicts)
-
-    #returns the a random word
-    #key = words avalible to choose from, values = weight of each word, 1 = choosing one word
-    return random.choices(list(blended_prob_dict.keys()), weights=(list)(blended_prob_dict.values()), k = 1)[0]
-
+    #blend all predictions
+    blended_probs = blended_probabilities(inner_dicts)
+    
+    # Sample a word according to the blended probabilities
+    words = list(blended_probs.keys())
+    weights = list(blended_probs.values())
+    return random.choices(words, weights=weights, k=1)[0]
                 
 
 def log_likelihood_ramp_up(sequence, models):
     # Task 4.1
     # Return a log likelihood value of the sequence based on the models.
     # Replace the line below with your code.
-    raise NotImplementedError
-    #
+
+    summed_log_values = 0.0
+
+    for i in range(len(sequence)):
+        
+        if i == 0:
+            current_model = models[-1]
+            previous_words = ()
+        else:
+            if i > 9:
+                current_model = models[0]
+                previous_words = sequence[(i - 9) : i]
+            else:
+                current_model = models[-(i + 1)]
+                previous_words = sequence[:i]
+            
+        current_word = sequence[i]
+            
+        #gets inner dict in current model of the given sequence
+        inner_dict = query_n_gram(current_model, tuple(previous_words))
+
+        if inner_dict is not None:
+            if current_word in inner_dict:
+                #getting all the values for all the words in inner dict
+                values_list = list(inner_dict.values())
+                
+                #sum all values in inner dict
+                total_value = 0
+                for value in values_list:
+                    total_value += value
+            
+                #get probability of current word appearing in inner dict
+                prob = inner_dict[current_word]/total_value
+                logged_prob = math.log(prob)
+                summed_log_values += logged_prob
+        else:
+            return -math.inf
+            
+    return summed_log_values
+             
+
 
 def log_likelihood_blended(sequence, models):
     # Task 4.2
     # Return a log likelihood value of the sequence based on the models.
     # Replace the line below with your code.
-    raise NotImplementedError
+    summed_log_values = 0.0
+    
+    for i in range(len(sequence)):
+        current_word = sequence[i]
+        inner_dicts = []  
+        
+        for model in models:
+            #determine how much context this model needs
+            
+            for key in model.keys():
+                current_length = len(key)  
+                break
+            
+            context_length = current_length
+            
+            available_context = min(context_length, i)
+            context = tuple(sequence[i - available_context:i])
+            
+            inner = query_n_gram(model, context)
+            if inner is not None:
+                inner_dicts.append(inner)
+        
+        if not inner_dicts:
+            return -math.inf
+        
+        blended_prob_dict = blended_probabilities(inner_dicts)
+        
+        if current_word in blended_prob_dict:
+            summed_log_values += math.log(blended_prob_dict[current_word])
+        else:
+            return -math.inf
+    
+    return summed_log_values
 
+   
 if __name__ == '__main__':
 
     sequence = tokenise('assignment3corpus.txt')
@@ -275,11 +336,11 @@ if __name__ == '__main__':
     
 
     # Task 4.1 test code
-    '''
+    
     print(log_likelihood_ramp_up(sequence[:20], models))
-    '''
+    
 
     # Task 4.2 test code
-    '''
+    
     print(log_likelihood_blended(sequence[:20], models))
-    '''
+
