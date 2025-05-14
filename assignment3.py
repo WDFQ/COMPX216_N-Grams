@@ -84,7 +84,7 @@ def build_n_gram(sequence, n):
     # Return an n-gram model.
     # Replace the line below with your code.
 
-    #gets the first n no of context words 
+    #gets the first n context words
     prev_words = tuple(sequence[:n - 1])
     
     #create outer dictionary 
@@ -94,11 +94,11 @@ def build_n_gram(sequence, n):
     #loop through the text document
     for word in sequence:
 
-        #check if the initial length has enough context to be put in to the outer dict
+        #skip over the first n words
         if word in prev_words:
             continue
 
-        #if prev words is in outer dictionary 
+        #check if our ngram has the given context words 
         if(prev_words in outer_dictionary):
             inner_dictionary = outer_dictionary[prev_words]
 
@@ -122,7 +122,7 @@ def build_n_gram(sequence, n):
             
 
 
-        #update tuple 
+        #update the context words
         prev_words_list = []
         counter = 0
         for old_word in prev_words:
@@ -186,29 +186,28 @@ def sample(sequence, models):
         #find this model's context length
         context_length = 0
         for key in model.keys():
-                #get context legnth from first key since they all have the same legnth
+                #get the legnth of the context of the current model (n gram)
                 context_length = len(key) 
                 break  
             
-        #calculating how much context is avalible
+        #takes the lower value of either sequence legnth or ngram context length, this decides which ngram to use
         available_context = min(context_length, len(sequence))
         
-        #get the context words (empty tuple if no context available)
-        
+        #get the context words 
         if available_context > 0:
             context = tuple(sequence[-available_context:]) 
         else:
            context = ()
         
         #get the model's prediction (current inner dictionary) for this context
-        prediction = query_n_gram(model, context)
-        if prediction is not None:
-            inner_dicts.append(prediction)
+        inner_dict = query_n_gram(model, context)
+        if inner_dict is not None:
+            inner_dicts.append(inner_dict)
 
     #blend all predictions
     blended_probs = blended_probabilities(inner_dicts)
     
-    # Sample a word according to the blended probabilities
+    #randomly picks a value based on their weighting 
     words = list(blended_probs.keys())
     weights = list(blended_probs.values())
     return random.choices(words, weights=weights, k=1)[0]
