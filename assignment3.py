@@ -83,62 +83,24 @@ def build_n_gram(sequence, n):
     # Task 1.3
     # Return an n-gram model.
     # Replace the line below with your code.
+    outer_dict = {}
 
-    #gets the first n context words
-    prev_words = tuple(sequence[:n - 1])
-    
-    #create outer dictionary 
-    outer_dictionary = {}
-    
+    for i in range(len(sequence) - (n + 1)):
+        context = tuple(sequence[i:i + n - 1])
+        current_word = sequence[i + n - 1]
 
-    #loop through the text document
-    for word in sequence:
+        #check if context is already in the outer dict
+        if context not in outer_dict:
+            outer_dict[context] = {}
+            outer_dict[context][current_word] = 0
 
-        #skip over the first n words
-        if word in prev_words:
-            continue
-
-        #check if our ngram has the given context words 
-        if(prev_words in outer_dictionary):
-            inner_dictionary = outer_dictionary[prev_words]
-
-            #if word is already in inner dictionary
-            if word in inner_dictionary:
-                #increment the value for that key (word)
-                inner_dictionary[word] += 1
-            else:
-                #create a new entry in the inner dictionary and make value = 1
-                inner_dictionary[word] = 1
-
-            #set value of outer dict to inner dict with current words
-            outer_dictionary[prev_words] = inner_dictionary
-        else:
-            #create
-            inner_dictionary = {}
-            #set value of outer dict to inner dict with current word
-            outer_dictionary[prev_words] = inner_dictionary
-            #create a new entry in the inner dictionary and make value = 1
-            inner_dictionary[word] = 1
+        #check if context is already in the inner dict
+        if current_word not in outer_dict[context]:
+            outer_dict[context][current_word] = 0
+        outer_dict[context][current_word] += 1
+        
             
-
-
-        #update the context words
-        prev_words_list = []
-        counter = 0
-        for old_word in prev_words:
-            if counter == 0:
-                counter += 1
-                continue
-            else:
-                prev_words_list.append(old_word)
-            counter += 1
-
-        prev_words_list.append(word)
-
-        prev_words = (tuple)(prev_words_list)
-
-            
-    return outer_dictionary
+    return outer_dict
     
 
 def query_n_gram(model, sequence):
@@ -319,7 +281,7 @@ if __name__ == '__main__':
     print(model)
 
     # Task 2 test code
-    print()
+    #print()
     print(query_n_gram(model, tuple(sequence[:4])))
 
 
